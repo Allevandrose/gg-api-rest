@@ -11,3 +11,20 @@
 [2025-02-26T19:25:26.362Z] [INFO] Server running on port 5000
 [2025-02-26T19:27:16.819Z] [INFO] Server running on port 5000
 [2025-02-26T19:27:33.935Z] [INFO] Server running on port 5000
+[2025-02-28T12:11:02.146Z] [INFO] Server running on port 5000
+[2025-03-01T04:43:03.252Z] [ERROR] Database connection failed: 
+[2025-03-01T04:43:31.978Z] [INFO] Server running on port 5000
+[2025-03-01T04:52:40.152Z] [INFO] Server running on port 5000
+[2025-03-01T04:53:46.723Z] [INFO] Server running on port 5000
+[2025-03-01T07:43:35.962Z] [INFO] Server running on port 5000
+[2025-03-01T07:45:04.527Z] [INFO] Server running on port 5000
+[2025-03-01T07:47:46.650Z] [INFO] Server running on port 5000
+[2025-03-01T07:47:56.373Z] [INFO] Server running on port 5000
+[2025-03-01T07:48:27.536Z] [INFO] Server running on port 5000
+[2025-03-01T07:52:28.709Z] [INFO] Server running on port 5000
+[2025-03-01T08:17:29.661Z] [INFO] Database connected successfully
+[2025-03-01T08:17:29.665Z] [INFO] Server running on port 5000
+[2025-03-01T08:17:29.676Z] [INFO] Deleted past events
+[2025-03-02T07:15:13.310Z] [INFO] Database connected successfully
+[2025-03-02T07:15:13.314Z] [INFO] Server running on port 5000
+[2025-03-02T07:15:13.356Z] [INFO] Deleted past events

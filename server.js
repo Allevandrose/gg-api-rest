@@ -18,27 +18,51 @@ dotenv.config();
 
 const app = express();
 
-// Middleware
+// 🛠️ Middleware
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
-app.use('/uploads', express.static('uploads')); // Serve uploaded files
-app.use(errorHandler);
 
-// Routes
+// 🚀 Cache-Control Headers (Fixes 304 Issues)
+app.use((req, res, next) => {
+  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  next();
+});
+
+// 📂 Serve Uploaded Files
+app.use('/uploads', express.static('uploads'));
+
+// 🛣️ Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
 
-// Start Server
+// ❌ Error Handling Middleware (Place at the END)
+app.use(errorHandler);
+
+// 🌐 Start the Server After Connecting to Database
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, async () => {
+
+const startServer = async () => {
     try {
-        await db.getConnection();
-        log(`Server running on port ${PORT}`, 'INFO');
+        await db.getConnection(); // Ensure DB is connected
+        log('Database connected successfully', 'INFO');
+
+        app.listen(PORT, () => {
+            log(`Server running on port ${PORT}`, 'INFO');
+        });
+
+        // 🔄 Start Cron Jobs (Delete past events)
+        deletePastEvents();
     } catch (error) {
         log(`Database connection failed: ${error.message}`, 'ERROR');
+        process.exit(1); // Exit process if DB connection fails
     }
-});
+};
+
+// 🔥 Start the application
+startServer();
