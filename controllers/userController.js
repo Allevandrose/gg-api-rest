@@ -48,7 +48,9 @@ exports.deleteUser = async (req, res) => {
         const { id } = req.params;
         if (!id) return res.status(400).json({ error: 'User ID is required' });
 
-        await db.execute('DELETE FROM users WHERE id = ?', [id]);
+        const [result] = await db.execute('DELETE FROM users WHERE id = ?', [id]);
+        if (result.affectedRows === 0) return res.status(404).json({ error: 'User not found' });
+
         res.status(200).json({ message: 'User deleted successfully' });
     } catch (error) {
         console.error("Delete User Error:", error);
