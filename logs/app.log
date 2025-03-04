@@ -46,3 +46,43 @@
 [2025-03-03T15:13:15.865Z] [INFO] Database connected successfully
 [2025-03-03T15:13:15.870Z] [INFO] Server running on port 5000
 [2025-03-03T15:13:15.875Z] [INFO] Deleted past events
+[2025-03-04T08:03:17.449Z] [INFO] Database connected successfully
+[2025-03-04T08:03:17.456Z] [INFO] Server running on port 5000
+[2025-03-04T08:03:17.495Z] [INFO] Deleted past events
+[2025-03-04T08:10:47.081Z] [INFO] Database connected successfully
+[2025-03-04T08:10:47.087Z] [INFO] Server running on port 5000
+[2025-03-04T08:10:47.091Z] [INFO] Deleted past events
+[2025-03-04T08:12:27.843Z] [INFO] Database connected successfully
+[2025-03-04T08:12:27.849Z] [INFO] Server running on port 5000
+[2025-03-04T08:12:27.854Z] [INFO] Deleted past events
+[2025-03-04T08:14:30.472Z] [INFO] Database connected successfully
+[2025-03-04T08:14:30.478Z] [INFO] Server running on port 5000
+[2025-03-04T08:14:30.482Z] [INFO] Deleted past events
+[2025-03-04T08:16:15.877Z] [INFO] Database connected successfully
+[2025-03-04T08:16:15.881Z] [INFO] Server running on port 5000
+[2025-03-04T08:16:15.884Z] [INFO] Deleted past events
+[2025-03-04T08:35:51.513Z] [INFO] 🚀 Cron job scheduled: Deleting past events at midnight
+[2025-03-04T08:35:52.632Z] [INFO] Database connected successfully
+[2025-03-04T08:35:52.637Z] [INFO] Server running on port 5000
+[2025-03-04T08:35:52.647Z] [INFO] ✅ Deleted 1 past events
+[2025-03-04T08:36:50.964Z] [INFO] Database connected successfully
+[2025-03-04T08:36:50.968Z] [INFO] Server running on port 5000
+[2025-03-04T08:36:50.978Z] [INFO] Deleted 0 past events
+[2025-03-04T08:39:51.885Z] [INFO] Database connected successfully
+[2025-03-04T08:39:51.890Z] [INFO] Server running on port 5000
+[2025-03-04T08:39:51.899Z] [INFO] Deleted 0 past events
+[2025-03-04T08:46:05.685Z] [INFO] Database connected successfully
+[2025-03-04T08:46:05.690Z] [INFO] Server running on port 5000
+[2025-03-04T08:46:05.698Z] [INFO] Deleted 0 past events
+[2025-03-04T08:56:12.641Z] [INFO] Database connected successfully
+[2025-03-04T08:56:12.646Z] [INFO] Server running on port 5000
+[2025-03-04T08:56:12.656Z] [INFO] Deleted 0 past events
+[2025-03-04T08:56:25.173Z] [INFO] Database connected successfully
+[2025-03-04T08:56:25.176Z] [INFO] Server running on port 5000
+[2025-03-04T08:56:25.186Z] [INFO] Deleted 0 past events
+[2025-03-04T09:07:35.097Z] [INFO] Database connected successfully
+[2025-03-04T09:07:35.102Z] [INFO] Server running on port 5000
+[2025-03-04T09:07:35.114Z] [INFO] Deleted 0 past events
+[2025-03-04T09:14:51.935Z] [INFO] Database connected successfully
+[2025-03-04T09:14:51.940Z] [INFO] Server running on port 5000
+[2025-03-04T09:14:51.949Z] [INFO] Deleted 0 past events
