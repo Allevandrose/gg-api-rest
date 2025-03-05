@@ -3,6 +3,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const sendEmail = require('../utils/emailService');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
+const path = require('path');
 
 exports.processPayment = async (req, res) => {
     try {
@@ -10,14 +11,12 @@ exports.processPayment = async (req, res) => {
         const { event_id, amount, stripeToken } = req.body;
         const user_id = req.user.id;
 
-        // Log received data for debugging
         console.log("Received Payment Request:", { event_id, amount, stripeToken });
 
         // Validate required fields
         if (!stripeToken) {
             return res.status(400).json({ error: "Payment token (stripeToken) is missing" });
         }
-
         if (!amount || isNaN(amount)) {
             return res.status(400).json({ error: "Invalid amount. Amount must be a number." });
         }
@@ -47,11 +46,17 @@ exports.processPayment = async (req, res) => {
             return res.status(404).json({ error: "Event not found" });
         }
 
+        // Ensure the 'uploads/tickets' directory exists
+        const ticketsDir = path.join(__dirname, '../uploads/tickets');
+        if (!fs.existsSync(ticketsDir)) {
+            fs.mkdirSync(ticketsDir, { recursive: true });
+        }
+
         // Generate a ticket PDF
+        const ticketPath = path.join(ticketsDir, `ticket-${charge.id}.pdf`);
         const doc = new PDFDocument();
-        doc.text(`Ticket for ${event[0].name}\nTransaction: ${charge.id}\nAmount: $${amount}`);
-        const ticketPath = `./uploads/tickets/ticket-${charge.id}.pdf`;
         doc.pipe(fs.createWriteStream(ticketPath));
+        doc.text(`Ticket for ${event[0].name}\nTransaction: ${charge.id}\nAmount: $${amount}`);
         doc.end();
 
         // Fetch user email
@@ -60,16 +65,16 @@ exports.processPayment = async (req, res) => {
             return res.status(404).json({ error: "User not found" });
         }
 
-        // Send confirmation email
+        // Send confirmation email with ticket download link
         await sendEmail(
             user[0].email,
             'Payment Confirmation',
             `Payment successful! Amount: $${amount}`,
             `<p>Payment successful! Amount: $${amount}</p>
-             <p>Download your ticket <a href="ticket-${charge.id}.pdf">here</a></p>`
+             <p>Download your ticket <a href="/tickets/ticket-${charge.id}.pdf">here</a></p>`
         );
 
-        res.status(200).json({ message: 'Payment successful', charge });
+        res.status(200).json({ message: 'Payment successful', charge, ticketPath });
     } catch (error) {
         console.error("Payment Error:", error);
         res.status(500).json({ error: error.message || 'Payment failed' });
