@@ -29,7 +29,7 @@ const upload = multer({
 // 🔹 Helper function to delete image file
 const deleteImageFile = (imagePath) => {
     if (imagePath) {
-        const fullPath = path.join(__dirname, '..', imagePath);
+        const fullPath = path.resolve(__dirname, '..', imagePath);
         if (fs.existsSync(fullPath)) {
             fs.unlinkSync(fullPath);
         }
@@ -45,19 +45,17 @@ exports.createEvent = async (req, res) => {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
-        const formattedDate = new Date(date).toISOString().split('T')[0]; // Convert to YYYY-MM-DD
-        const image = req.file ? `/uploads/eventImages/${req.file.filename}` : null;
+        const eventDate = new Date(date);
+        if (isNaN(eventDate.getTime()) || eventDate < new Date()) {
+            return res.status(400).json({ error: "Invalid or past date" });
+        }
 
-        const vipTickets = tickets_vip || 50;
-        const regularTickets = tickets_regular || 100;
-        const vipPrice = price_vip || 0;
-        const regularPrice = price_regular || 0;
-        const eventHost = host || 'Admin';
-        const eventVenue = venue || location;
+        const formattedDate = eventDate.toISOString().split('T')[0]; // Convert to YYYY-MM-DD
+        const image = req.file ? `/uploads/eventImages/${req.file.filename}` : null;
 
         const [result] = await db.execute(
             'INSERT INTO events (name, description, location, host, price_vip, price_regular, venue, date, time, tickets_vip, tickets_regular, image) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [name, description, location, eventHost, vipPrice, regularPrice, eventVenue, formattedDate, time, vipTickets, regularTickets, image]
+            [name, description, location, host || 'Admin', price_vip || 0, price_regular || 0, venue || location, formattedDate, time, tickets_vip || 50, tickets_regular || 100, image]
         );
 
         res.status(201).json({ message: 'Event created successfully', eventId: result.insertId });
@@ -77,14 +75,18 @@ exports.updateEvent = async (req, res) => {
 
         if (!id) return res.status(400).json({ error: 'Event ID is required' });
 
+        // Fetch existing event
+        const [event] = await db.execute('SELECT image FROM events WHERE id = ?', [id]);
+        if (!event.length) return res.status(404).json({ error: 'Event not found' });
+
         // Convert date to YYYY-MM-DD if provided
         if (updates.date) {
-            updates.date = new Date(updates.date).toISOString().split('T')[0];
+            const eventDate = new Date(updates.date);
+            if (isNaN(eventDate.getTime())) {
+                return res.status(400).json({ error: 'Invalid date format' });
+            }
+            updates.date = eventDate.toISOString().split('T')[0];
         }
-
-        const [event] = await db.execute('SELECT image FROM events WHERE id = ?', [id]);
-
-        if (!event.length) return res.status(404).json({ error: 'Event not found' });
 
         const fields = [
             'name', 'description', 'location', 'host',
@@ -105,6 +107,8 @@ exports.updateEvent = async (req, res) => {
         if (newImage) {
             setClause += 'image = ?, ';
             params.push(newImage);
+        } else {
+            updates.image = event[0].image; // Retain existing image if no new image is provided
         }
 
         if (params.length === 0) {
@@ -134,16 +138,14 @@ exports.deleteEvent = async (req, res) => {
         const { id } = req.params;
         if (!id) return res.status(400).json({ error: 'Event ID is required' });
 
-        // Fetch event to get image path before deletion
         const [event] = await db.execute('SELECT image FROM events WHERE id = ?', [id]);
 
         if (!event.length) return res.status(404).json({ error: 'Event not found' });
 
-        // Delete event from DB
         const [result] = await db.execute('DELETE FROM events WHERE id = ?', [id]);
 
         if (result.affectedRows > 0) {
-            deleteImageFile(event[0].image); // Remove event image
+            deleteImageFile(event[0].image);
             res.status(200).json({ message: 'Event deleted successfully' });
         } else {
             res.status(404).json({ error: 'Event not found' });
@@ -157,7 +159,7 @@ exports.deleteEvent = async (req, res) => {
 // ✅ Get All Future Events
 exports.getAllEvents = async (req, res) => {
     try {
-        const [events] = await db.execute('SELECT * FROM events WHERE date >= CURDATE()');
+        const [events] = await db.execute('SELECT * FROM events WHERE date >= CURDATE() ORDER BY date ASC');
         res.status(200).json(events);
     } catch (error) {
         console.error('Error fetching events:', error);
@@ -175,7 +177,12 @@ exports.getEventById = async (req, res) => {
 
         if (!event.length) return res.status(404).json({ error: 'Event not found' });
 
-        res.status(200).json(event[0]);
+        const eventData = {
+            ...event[0],
+            date: new Date(event[0].date).toISOString().split('T')[0]
+        };
+
+        res.status(200).json(eventData);
     } catch (error) {
         console.error('Error fetching event:', error);
         res.status(500).json({ error: 'Server error' });
@@ -185,7 +192,7 @@ exports.getEventById = async (req, res) => {
 // ✅ Get All Events for Admin
 exports.getAllEventsAdmin = async (req, res) => {
     try {
-        const [events] = await db.execute('SELECT * FROM events');
+        const [events] = await db.execute('SELECT * FROM events ORDER BY date DESC');
         res.status(200).json(events);
     } catch (error) {
         console.error('Error fetching all events:', error);
