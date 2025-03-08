@@ -1,16 +1,17 @@
 const express = require('express');
-const { authenticateUser, authorizeRole } = require('../middlewares/authMiddleware');
-const { processPayment, getAllPayments, getUserPayments } = require('../controllers/paymentController');
-
 const router = express.Router();
+const { 
+    processPayment, 
+    confirmPayment, 
+    getAllPayments, 
+    getUserPayments 
+} = require('../controllers/paymentController');
+const { authenticateUser, authorizeRole } = require('../middlewares/authMiddleware');
 
-// Payment checkout (User Only)
+// Updated routes
 router.post('/checkout', authenticateUser, processPayment);
-
-// Get all payments (Admin Only)
+router.post('/confirm', authenticateUser, confirmPayment); // Add confirmation endpoint
 router.get('/', authenticateUser, authorizeRole('admin'), getAllPayments);
-
-// Get user's payments
 router.get('/user', authenticateUser, getUserPayments);
 
 module.exports = router;

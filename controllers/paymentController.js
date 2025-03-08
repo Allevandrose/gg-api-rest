@@ -1,105 +1,124 @@
-const db = require('../config/db');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const sendEmail = require('../utils/emailService');
-const PDFDocument = require('pdfkit');
-const fs = require('fs');
-const path = require('path');
+const db = require("../config/db");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const sendEmail = require("../utils/emailService");
+const generateTicket = require("../utils/ticketGenerator");
 
-exports.processPayment = async (req, res) => {
-    try {
-        // Extract request data
-        const { event_id, amount, stripeToken } = req.body;
-        const user_id = req.user.id;
+// ✅ Process Payment (Step 1)
+const processPayment = async (req, res) => {
+  try {
+    const { event_id, amount, paymentMethodId } = req.body;
+    const user_id = req.user.id;
 
-        console.log("Received Payment Request:", { event_id, amount, stripeToken });
+    if (!paymentMethodId) return res.status(400).json({ error: "Payment method ID is missing" });
+    if (!amount || isNaN(amount)) return res.status(400).json({ error: "Invalid amount" });
 
-        // Validate required fields
-        if (!stripeToken) {
-            return res.status(400).json({ error: "Payment token (stripeToken) is missing" });
-        }
-        if (!amount || isNaN(amount)) {
-            return res.status(400).json({ error: "Invalid amount. Amount must be a number." });
-        }
+    const amountInCents = Math.round(amount * 100);
 
-        // Convert amount to cents
-        const amountInCents = Math.round(amount * 100);
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amountInCents,
+      currency: "usd",
+      payment_method: paymentMethodId,
+      automatic_payment_methods: { enabled: true },
+      metadata: { event_id, user_id },
+    });
 
-        // Process Stripe payment
-        const charge = await stripe.charges.create({
-            amount: amountInCents,
-            currency: 'usd',
-            source: stripeToken,
-            description: 'Event Booking Payment'
-        });
-
-        console.log("Stripe Charge Successful:", charge);
-
-        // Insert payment record into the database
-        await db.execute(
-            'INSERT INTO payments (user_id, event_id, transaction_code, amount) VALUES (?, ?, ?, ?)',
-            [user_id, event_id, charge.id, amount]
-        );
-
-        // Fetch event name
-        const [event] = await db.execute('SELECT name FROM events WHERE id = ?', [event_id]);
-        if (!event.length) {
-            return res.status(404).json({ error: "Event not found" });
-        }
-
-        // Ensure the 'uploads/tickets' directory exists
-        const ticketsDir = path.join(__dirname, '../uploads/tickets');
-        if (!fs.existsSync(ticketsDir)) {
-            fs.mkdirSync(ticketsDir, { recursive: true });
-        }
-
-        // Generate a ticket PDF
-        const ticketPath = path.join(ticketsDir, `ticket-${charge.id}.pdf`);
-        const doc = new PDFDocument();
-        doc.pipe(fs.createWriteStream(ticketPath));
-        doc.text(`Ticket for ${event[0].name}\nTransaction: ${charge.id}\nAmount: $${amount}`);
-        doc.end();
-
-        // Fetch user email
-        const [user] = await db.execute('SELECT email FROM users WHERE id = ?', [user_id]);
-        if (!user.length) {
-            return res.status(404).json({ error: "User not found" });
-        }
-
-        // Send confirmation email with ticket download link
-        await sendEmail(
-            user[0].email,
-            'Payment Confirmation',
-            `Payment successful! Amount: $${amount}`,
-            `<p>Payment successful! Amount: $${amount}</p>
-             <p>Download your ticket <a href="/tickets/ticket-${charge.id}.pdf">here</a></p>`
-        );
-
-        res.status(200).json({ message: 'Payment successful', charge, ticketPath });
-    } catch (error) {
-        console.error("Payment Error:", error);
-        res.status(500).json({ error: error.message || 'Payment failed' });
-    }
+    res.status(200).json({
+      clientSecret: paymentIntent.client_secret,
+      requiresAction: paymentIntent.status === "requires_action",
+    });
+  } catch (error) {
+    console.error("Payment Error:", error);
+    res.status(500).json({ error: error.message || "Payment failed" });
+  }
 };
 
-// Fetch all payments (Admin only)
-exports.getAllPayments = async (req, res) => {
-    try {
-        const [payments] = await db.execute('SELECT * FROM payments');
-        res.status(200).json(payments);
-    } catch (error) {
-        console.error("Error Fetching Payments:", error);
-        res.status(500).json({ error: 'Server error' });
+// ✅ Confirm Payment (Step 2)
+const confirmPayment = async (req, res) => {
+  try {
+    const { paymentIntentId } = req.body;
+    const user_id = req.user.id;
+
+    if (!paymentIntentId) return res.status(400).json({ error: "Payment Intent ID is missing" });
+
+    const paymentIntent = await stripe.paymentIntents.confirm(paymentIntentId);
+
+    if (paymentIntent.status !== "succeeded") {
+      return res.status(400).json({ error: "Payment confirmation failed." });
     }
+
+    console.log("✅ Payment Confirmed:", paymentIntent.id);
+
+    // Store payment in the database
+    await db.execute(
+      "INSERT INTO payments (user_id, event_id, transaction_code, amount) VALUES (?, ?, ?, ?)",
+      [user_id, paymentIntent.metadata.event_id, paymentIntent.id, paymentIntent.amount / 100]
+    );
+
+    // Fetch event details
+    const [event] = await db.execute("SELECT name, date, venue FROM events WHERE id = ?", [
+      paymentIntent.metadata.event_id,
+    ]);
+    if (!event.length) return res.status(404).json({ error: "Event not found" });
+
+    // Fetch user details
+    const [user] = await db.execute("SELECT name, email FROM users WHERE id = ?", [user_id]);
+    if (!user.length) return res.status(404).json({ error: "User not found" });
+
+    // Generate ticket
+    const ticketPath = await generateTicket(
+      event[0].name,
+      paymentIntent.id,
+      paymentIntent.amount / 100,
+      user[0],
+      event[0].date,
+      event[0].venue
+    );
+
+    // Send confirmation email
+    try {
+      await sendEmail(
+        user[0].email,
+        "Payment Confirmation",
+        `Payment successful! Amount: $${paymentIntent.amount / 100}`,
+        `<p>Payment successful! Amount: $${paymentIntent.amount / 100}</p>
+         <p>Download your ticket <a href="${process.env.FRONTEND_URL}/uploads/tickets/ticket-${paymentIntent.id}.pdf">here</a></p>`
+      );
+    } catch (emailError) {
+      console.error("❌ Error sending confirmation email:", emailError);
+    }
+
+    res.status(200).json({ message: "Payment successful", paymentIntent, ticketPath });
+  } catch (error) {
+    console.error("❌ Payment Confirmation Error:", error);
+    res.status(500).json({ error: "Payment confirmation failed" });
+  }
 };
 
-// Fetch user-specific payments
-exports.getUserPayments = async (req, res) => {
-    try {
-        const user_id = req.user.id;
-        const [payments] = await db.execute('SELECT * FROM payments WHERE user_id = ?', [user_id]);
-        res.status(200).json(payments);
-    } catch (error) {
-        console.error("Error Fetching User Payments:", error);
-        res.status(500).json({ error: 'Server error' });
+// ✅ Get All Payments (Admin Only)
+const getAllPayments = async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ error: "Unauthorized access" });
     }
+
+    const [payments] = await db.execute("SELECT * FROM payments");
+    res.status(200).json(payments);
+  } catch (error) {
+    console.error("❌ Error Fetching Payments:", error);
+    res.status(500).json({ error: "Server error" });
+  }
 };
+
+// ✅ Get User Payments (Regular Users)
+const getUserPayments = async (req, res) => {
+  try {
+    const user_id = req.user.id;
+    const [payments] = await db.execute("SELECT * FROM payments WHERE user_id = ?", [user_id]);
+    res.status(200).json(payments);
+  } catch (error) {
+    console.error("❌ Error Fetching User Payments:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+module.exports = { processPayment, confirmPayment, getAllPayments, getUserPayments };

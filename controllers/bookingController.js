@@ -64,7 +64,12 @@ exports.bookEvent = async (req, res) => {
             await connection.rollback();
         }
         console.error('Booking Error:', error);
-        res.status(500).json({ error: 'Server error', details: error.message });
+        
+        // Strictly implemented standardized error response
+        res.status(500).json({ 
+            error: error.message || 'Server error',
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     } finally {
         if (connection) {
             connection.release();
@@ -75,20 +80,31 @@ exports.bookEvent = async (req, res) => {
 exports.getUserBookings = async (req, res) => {
     try {
         const user_id = req.user.id;
-        const [bookings] = await db.execute('SELECT * FROM bookings WHERE user_id = ?', [user_id]);
+        const [bookings] = await db.execute(
+            'SELECT bookings.*, events.name AS event_name, events.date AS event_date FROM bookings JOIN events ON bookings.event_id = events.id WHERE bookings.user_id = ?',
+            [user_id]
+        );
         res.status(200).json(bookings);
     } catch (error) {
         console.error('Error fetching user bookings:', error);
-        res.status(500).json({ error: 'Server error', details: error.message });
+        res.status(500).json({ 
+            error: 'Server error', 
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 };
 
 exports.getAllBookings = async (req, res) => {
     try {
-        const [bookings] = await db.execute('SELECT * FROM bookings');
+        const [bookings] = await db.execute(
+            'SELECT bookings.*, users.name AS user_name, events.name AS event_name FROM bookings JOIN users ON bookings.user_id = users.id JOIN events ON bookings.event_id = events.id'
+        );
         res.status(200).json(bookings);
     } catch (error) {
         console.error('Error fetching all bookings:', error);
-        res.status(500).json({ error: 'Server error', details: error.message });
+        res.status(500).json({ 
+            error: 'Server error', 
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 };
