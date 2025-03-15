@@ -35,7 +35,7 @@ const processPayment = async (req, res) => {
 // ✅ Confirm Payment (Step 2)
 const confirmPayment = async (req, res) => {
   try {
-    const { paymentIntentId } = req.body;
+    const { paymentIntentId, generateTicketFlag = true } = req.body; // Add a flag to make ticket generation optional
     const user_id = req.user.id;
 
     if (!paymentIntentId) return res.status(400).json({ error: "Payment Intent ID is missing" });
@@ -64,27 +64,47 @@ const confirmPayment = async (req, res) => {
     const [user] = await db.execute("SELECT name, email FROM users WHERE id = ?", [user_id]);
     if (!user.length) return res.status(404).json({ error: "User not found" });
 
-    // Generate ticket
-    const ticketPath = await generateTicket(
-      event[0].name,
-      paymentIntent.id,
-      paymentIntent.amount / 100,
-      user[0],
-      event[0].date,
-      event[0].venue
-    );
-
     // Send confirmation email
     try {
       await sendEmail(
         user[0].email,
         "Payment Confirmation",
         `Payment successful! Amount: $${paymentIntent.amount / 100}`,
-        `<p>Payment successful! Amount: $${paymentIntent.amount / 100}</p>
-         <p>Download your ticket <a href="${process.env.FRONTEND_URL}/uploads/tickets/ticket-${paymentIntent.id}.pdf">here</a></p>`
+        `<p>Payment successful! Amount: $${paymentIntent.amount / 100}</p>`
       );
     } catch (emailError) {
       console.error("❌ Error sending confirmation email:", emailError);
+    }
+
+    // Generate ticket (optional)
+    let ticketPath = null;
+    if (generateTicketFlag) {
+      try {
+        ticketPath = await generateTicket(
+          event[0].name,
+          paymentIntent.id,
+          paymentIntent.amount / 100,
+          user[0],
+          event[0].date,
+          event[0].venue
+        );
+
+        // Send follow-up email with ticket link if ticket generation is successful
+        try {
+          await sendEmail(
+            user[0].email,
+            "Your Ticket is Ready",
+            `Your ticket for ${event[0].name} is ready!`,
+            `<p>Your ticket for ${event[0].name} is ready!</p>
+             <p>Download your ticket <a href="${process.env.FRONTEND_URL}/uploads/tickets/ticket-${paymentIntent.id}.pdf">here</a></p>`
+          );
+        } catch (ticketEmailError) {
+          console.error("❌ Error sending ticket email:", ticketEmailError);
+        }
+      } catch (ticketError) {
+        console.error("❌ Error generating ticket:", ticketError);
+        // Ticket generation failed, but payment and email were successful
+      }
     }
 
     res.status(200).json({ message: "Payment successful", paymentIntent, ticketPath });

@@ -161,3 +161,34 @@
 [2025-03-08T00:07:54.261Z] [INFO] Database connected successfully
 [2025-03-08T00:07:54.265Z] [INFO] 🚀 Server running on port 5000
 [2025-03-08T00:07:54.277Z] [INFO] Deleted 0 past events
+[2025-03-12T11:18:15.347Z] [INFO] Database connected successfully
+[2025-03-12T11:18:15.353Z] [INFO] 🚀 Server running on port 5000
+[2025-03-12T11:18:15.372Z] [INFO] Deleted 0 past events
+[2025-03-12T11:21:31.899Z] [INFO] Database connected successfully
+[2025-03-12T11:21:31.904Z] [INFO] 🚀 Server running on port 5000
+[2025-03-12T11:21:31.913Z] [INFO] Deleted 0 past events
+[2025-03-13T09:17:42.206Z] [INFO] Database connected successfully
+[2025-03-13T09:17:42.213Z] [INFO] 🚀 Server running on port 5000
+[2025-03-13T09:17:42.226Z] [INFO] Deleted 0 past events
+[2025-03-13T14:31:05.613Z] [INFO] Database connected successfully
+[2025-03-13T14:31:05.619Z] [INFO] 🚀 Server running on port 5000
+[2025-03-13T14:31:05.633Z] [INFO] Deleted 0 past events
+[2025-03-13T14:34:21.151Z] [INFO] Database connected successfully
+[2025-03-13T14:34:21.164Z] [INFO] 🚀 Cron jobs started
+[2025-03-13T14:34:21.165Z] [INFO] 🚀 Server running on port 5000
+[2025-03-13T14:35:00.023Z] [INFO] ✅ Expired bookings released
+[2025-03-13T14:40:00.043Z] [INFO] ✅ Expired bookings released
+[2025-03-13T14:50:48.687Z] [INFO] Database connected successfully
+[2025-03-13T14:50:48.697Z] [INFO] 🚀 Cron jobs started
+[2025-03-13T14:50:48.697Z] [INFO] 🚀 Server running on port 5000
+[2025-03-13T14:55:00.021Z] [ERROR] ❌ Error releasing expired bookings: Table 'event_db.tickets' doesn't exist
+[2025-03-13T15:00:00.025Z] [ERROR] ❌ Error releasing expired bookings: Table 'event_db.tickets' doesn't exist
+[2025-03-13T15:03:02.979Z] [INFO] Database connected successfully
+[2025-03-13T15:03:02.984Z] [INFO] 🚀 Server running on port 5000
+[2025-03-13T15:03:02.995Z] [INFO] Deleted 0 past events
+[2025-03-13T15:05:04.493Z] [INFO] Database connected successfully
+[2025-03-13T15:05:04.500Z] [INFO] 🚀 Server running on port 5000
+[2025-03-13T15:05:04.511Z] [INFO] Deleted 0 past events
+[2025-03-13T15:05:13.855Z] [INFO] Database connected successfully
+[2025-03-13T15:05:13.859Z] [INFO] 🚀 Server running on port 5000
+[2025-03-13T15:05:13.867Z] [INFO] Deleted 0 past events
